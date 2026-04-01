@@ -38,7 +38,7 @@ PROMPTS = [
     "It was a dark and stormy night when the old lighthouse keeper heard a knock at the door.",
 ]
 REF_AUDIO = "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen3-TTS-Repo/clone_2.wav"
-REF_TEXT  = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
+REF_TEXT = "Okay. Yeah. I resent you. I love you. I respect you. But you know what? You blew it! And thanks to you."
 INSTRUCT = "Speak in an incredulous tone, but with a hint of panic beginning to creep into your voice."
 
 
@@ -95,13 +95,16 @@ def pcm_bytes_to_duration(num_bytes: int, sample_rate: int = 24000, sample_width
     num_samples = num_bytes / sample_width
     return num_samples / sample_rate
 
-def create_payload(prompt: str, task_type: str = "CustomVoice", voice: str = "vivian", language: str = "English") -> dict:
+
+def create_payload(
+    prompt: str, task_type: str = "CustomVoice", voice: str = "vivian", language: str = "English"
+) -> dict:
     payload = {
-      "input": prompt,
-      "language": language,
-      "stream": True,
-      "response_format": "pcm",
-      "task_type": task_type,
+        "input": prompt,
+        "language": language,
+        "stream": True,
+        "response_format": "pcm",
+        "task_type": task_type,
     }
 
     if task_type == "Base":

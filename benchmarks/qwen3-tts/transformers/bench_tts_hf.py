@@ -287,9 +287,7 @@ def parse_args():
     parser.add_argument("--gpu-device", type=int, default=0)
     parser.add_argument("--voice", type=str, default="Vivian")
     parser.add_argument("--language", type=str, default="English")
-    parser.add_argument(
-        "--task-type", type=str, default="CustomVoice", choices=["CustomVoice", "VoiceDesign", "Base"]
-    )
+    parser.add_argument("--task-type", type=str, default="CustomVoice", choices=["CustomVoice", "VoiceDesign", "Base"])
     parser.add_argument(
         "--config-name", type=str, default="hf_transformers", help="Label for this config (used in filenames)"
     )
