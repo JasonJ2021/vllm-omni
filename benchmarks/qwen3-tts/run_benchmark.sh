@@ -82,6 +82,7 @@ echo " Concurrency:  ${CONCURRENCY}"
 echo " Port:         ${PORT}"
 echo " Stage config: ${STAGE_CONFIG}"
 echo " Results:      ${RESULT_DIR}"
+echo " Task type:    ${TASK_TYPE}"
 echo "============================================================"
 
 # Prepare stage config with correct GPU device and memory settings
