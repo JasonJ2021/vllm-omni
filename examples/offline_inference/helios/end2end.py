@@ -229,7 +229,6 @@ def main():
             "force_refresh_step_policy": "repeat",
         }
 
-
     parallel_config = DiffusionParallelConfig(
         ulysses_degree=args.ulysses_degree,
         ring_degree=args.ring_degree,

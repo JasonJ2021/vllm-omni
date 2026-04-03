@@ -1271,7 +1271,6 @@ def enable_cache_for_helios(pipeline: Any, cache_config: Any) -> Callable[[int],
     return refresh_cache_context
 
 
-
 # Register custom cache-dit enablers after function definitions
 CUSTOM_DIT_ENABLERS.update(
     {
