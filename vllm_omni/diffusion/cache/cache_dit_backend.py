@@ -1216,6 +1216,10 @@ def enable_cache_for_helios(pipeline: Any, cache_config: Any) -> Callable[[int],
         calibrator = TaylorSeerCalibratorConfig(taylorseer_order=taylorseer_order)
         logger.info(f"TaylorSeer enabled with order={taylorseer_order}")
 
+    transformer = getattr(pipeline, "transformer", None)
+    if transformer is None:
+        raise ValueError("Helios cache-dit enable expects pipeline.transformer to exist.")
+
     # Build ParamsModifier for transformer
     modifier = ParamsModifier(
         cache_config=db_cache_config,
@@ -1233,8 +1237,8 @@ def enable_cache_for_helios(pipeline: Any, cache_config: Any) -> Callable[[int],
     cache_dit.enable_cache(
         (
             BlockAdapter(
-                transformer=pipeline.transformer,
-                blocks=pipeline.transformer.blocks,
+                transformer=transformer,
+                blocks=transformer.blocks,
                 # (hidden_states, encoder_hidden_states) -> hidden_states
                 forward_pattern=ForwardPattern.Pattern_2,
                 check_forward_pattern=True,
@@ -1252,11 +1256,15 @@ def enable_cache_for_helios(pipeline: Any, cache_config: Any) -> Callable[[int],
             pipeline: The Helios pipeline instance.
             num_inference_steps: New number of inference steps.
         """
+        transformer = getattr(pipeline, "transformer", None)
+        if transformer is None:
+            raise ValueError("Helios cache-dit refresh expects pipeline.transformer to exist.")
+
         if cache_config.scm_steps_mask_policy is None:
-            cache_dit.refresh_context(pipeline.transformer, num_inference_steps=num_inference_steps, verbose=verbose)
+            cache_dit.refresh_context(transformer, num_inference_steps=num_inference_steps, verbose=verbose)
         else:
             cache_dit.refresh_context(
-                pipeline.transformer,
+                transformer,
                 cache_config=DBCacheConfig().reset(
                     num_inference_steps=num_inference_steps,
                     steps_computation_mask=cache_dit.steps_mask(
