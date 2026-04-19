@@ -14,6 +14,7 @@ This module tests the cache backend implementations:
 from unittest.mock import Mock, patch
 
 import pytest
+from cache_dit import ForwardPattern
 
 from vllm_omni.diffusion.cache.cache_dit_backend import (
     CUSTOM_DIT_ENABLERS,
@@ -57,7 +58,7 @@ class TestCacheDiTBackend:
         mock_cache_dit.enable_cache = Mock()
         mock_cache_dit.refresh_context = Mock()
 
-        backend = CacheDiTBackend({"Fn_compute_blocks": 1})
+        backend = CacheDiTBackend({"Fn_compute_blocks": 2})
         backend.enable(mock_pipeline)
 
         # Verify cache-dit was enabled
@@ -194,7 +195,7 @@ class TestCacheDiTBackend:
         adapter_kwargs = mock_block_adapter.call_args.kwargs
         assert adapter_kwargs["transformer"] is mock_pipeline.transformer
         assert adapter_kwargs["blocks"] is mock_pipeline.transformer.blocks
-        assert adapter_kwargs["forward_pattern"] == adapter_kwargs["forward_pattern"].__class__.Pattern_2
+        assert adapter_kwargs["forward_pattern"] == ForwardPattern.Pattern_2
         assert adapter_kwargs["check_forward_pattern"] is True
         assert adapter_kwargs["has_separate_cfg"] is True
         assert len(adapter_kwargs["params_modifiers"]) == 1
