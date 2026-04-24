@@ -25,6 +25,8 @@ recipes/
 
 ## Available Recipes
 
+- [`Helios/Helios.md`](./Helios/Helios.md): video generation
+  recipe for Helios on `1x NVIDIA H20`
 - [`Qwen/Qwen3-Omni.md`](./Qwen/Qwen3-Omni.md): online serving recipe for
   multimodal chat on `1x A100 80GB`
 - [`Wan-AI/Wan2.2-I2V.md`](./Wan-AI/Wan2.2-I2V.md): image-to-video serving
