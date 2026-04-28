@@ -270,10 +270,7 @@ class OmniOpenAIServingSpeech(OpenAIServing, AudioMixin):
         if expected_dim is None:
             return None
         if emb_dim != expected_dim:
-            return (
-                f"speaker_embedding has {emb_dim} dimensions; "
-                f"expected {expected_dim} for the loaded Qwen3-TTS model"
-            )
+            return f"speaker_embedding has {emb_dim} dimensions; expected {expected_dim} for the loaded Qwen3-TTS model"
         return None
 
     def _load_codec_frame_rate(self) -> float | None:
