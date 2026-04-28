@@ -275,11 +275,12 @@ def extract_qwen_context(
     # ============================================================================
     return_dict = kwargs.get("return_dict", True)
 
-    def postprocess(h, temb=temb):
+    def postprocess(h):
         """Apply Qwen-specific output postprocessing."""
         if getattr(module, "zero_cond_t", False):
-            temb = temb.chunk(2, dim=0)[0]
-        h = module.norm_out(h, temb)
+            h = module.norm_out(h, temb.chunk(2, dim=0)[0])
+        else:
+            h = module.norm_out(h, temb)
         output = module.proj_out(h)
         if not return_dict:
             return (output,)
