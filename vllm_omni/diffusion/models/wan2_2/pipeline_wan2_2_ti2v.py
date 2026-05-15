@@ -33,7 +33,9 @@ from vllm_omni.diffusion.data import DiffusionOutput, OmniDiffusionConfig
 from vllm_omni.diffusion.distributed.autoencoders.autoencoder_kl_wan import OmniAutoencoderKLWan
 from vllm_omni.diffusion.distributed.cfg_parallel import CFGParallelMixin
 from vllm_omni.diffusion.distributed.utils import get_local_device
+from vllm_omni.diffusion.forward_context import set_forward_context_denoise_step_idx
 from vllm_omni.diffusion.model_loader.diffusers_loader import DiffusersPipelineLoader
+from vllm_omni.diffusion.model_loader.hub_prefetch import prefetch_subfolders
 from vllm_omni.diffusion.models.interface import SupportImageInput
 from vllm_omni.diffusion.models.progress_bar import ProgressBarMixin
 from vllm_omni.diffusion.models.wan2_2.pipeline_wan2_2 import (
@@ -44,6 +46,7 @@ from vllm_omni.diffusion.models.wan2_2.pipeline_wan2_2 import (
     resolve_wan_sample_solver,
     retrieve_latents,
 )
+from vllm_omni.diffusion.models.wan2_2.wan2_2_transformer import WanTransformer3DModel
 from vllm_omni.diffusion.postprocess import interpolate_video_tensor
 from vllm_omni.diffusion.request import OmniDiffusionRequest
 from vllm_omni.inputs.data import OmniTextPrompt
@@ -87,9 +90,6 @@ def get_wan22_ti2v_pre_process_func(
     od_config: OmniDiffusionConfig,
 ):
     """Pre-process function for TI2V: optionally load and resize input image."""
-    from diffusers.video_processor import VideoProcessor
-
-    video_processor = VideoProcessor(vae_scale_factor=8)
 
     def pre_process_func(request: OmniDiffusionRequest) -> OmniDiffusionRequest:
         for i, prompt in enumerate(request.prompts):
@@ -135,10 +135,6 @@ def get_wan22_ti2v_pre_process_func(
             )
             prompt["multi_modal_data"]["image"] = image  # type: ignore # key existence already checked above
 
-            # Preprocess for VAE
-            prompt["additional_information"]["preprocessed_image"] = video_processor.preprocess(
-                image, height=request.sampling_params.height, width=request.sampling_params.width
-            )
             request.prompts[i] = prompt
         return request
 
@@ -183,6 +179,13 @@ class Wan22TI2VPipeline(nn.Module, SupportImageInput, CFGParallelMixin, Progress
             ),
         ]
 
+        # See ``hub_prefetch.py`` for the transformers v5 subfolder race.
+        prefetch_subfolders(
+            model,
+            ["tokenizer", "text_encoder", "vae"],
+            local_files_only=local_files_only,
+        )
+
         # Text encoder
         self.tokenizer = AutoTokenizer.from_pretrained(model, subfolder="tokenizer", local_files_only=local_files_only)
         self.text_encoder = UMT5EncoderModel.from_pretrained(
@@ -197,7 +200,7 @@ class Wan22TI2VPipeline(nn.Module, SupportImageInput, CFGParallelMixin, Progress
         # Single transformer (TI2V uses dense 5B model, not MoE)
         # Load config from model to get correct dimensions
         transformer_config = load_transformer_config(model, "transformer", local_files_only)
-        self.transformer = create_transformer_from_config(transformer_config)
+        self.transformer = self._create_transformer(transformer_config)
 
         self._sample_solver = "unipc"
         self._flow_shift = od_config.flow_shift if od_config.flow_shift is not None else 5.0
@@ -213,6 +216,11 @@ class Wan22TI2VPipeline(nn.Module, SupportImageInput, CFGParallelMixin, Progress
         self._guidance_scale = None
         self._num_timesteps = None
         self._current_timestep = None
+
+    def _create_transformer(self, config: dict) -> WanTransformer3DModel:
+        """Create a transformer from a config dict. Respects od_config.quantization_config."""
+        quant_config = getattr(self.od_config, "quantization_config", None)
+        return create_transformer_from_config(config, quant_config=quant_config)
 
     @property
     def guidance_scale(self):
@@ -245,9 +253,12 @@ class Wan22TI2VPipeline(nn.Module, SupportImageInput, CFGParallelMixin, Progress
         latent_condition: torch.Tensor | None = None,
         first_frame_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
+        if attention_kwargs is None:
+            attention_kwargs = {}
         with self.progress_bar(total=len(timesteps)) as pbar:
-            for t in timesteps:
+            for step_idx, t in enumerate(timesteps):
                 self._current_timestep = t
+                set_forward_context_denoise_step_idx(step_idx)
 
                 # Prepare latent input
                 if latent_condition is not None:
