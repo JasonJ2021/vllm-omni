@@ -144,7 +144,7 @@ def test_qwen_image_edit(omni_server: OmniServer, openai_client: OpenAIClientHan
     _get_diffusion_feature_cases("Qwen/Qwen-Image-Edit-2511"),
     indirect=True,
 )
-def test_qwen_image_edit_2509_single_image(omni_server: OmniServer, openai_client: OpenAIClientHandler):
+def test_qwen_image_edit_2511_single_image(omni_server: OmniServer, openai_client: OpenAIClientHandler):
     """Test Qwen-Image-Edit-2509 with a single image input.
 
     Regression: with tea_cache enabled and zero_cond_t=True, the TeaCache
