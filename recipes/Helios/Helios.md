@@ -1,4 +1,4 @@
-# Helios for video generation on 1x NVIDIA H20
+# Helios for video generation
 
 ## Summary
 
